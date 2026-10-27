@@ -1,0 +1,28 @@
+{
+  "mode": "fixture",
+  "seed_query": "Radiohead",
+  "located": [
+    {
+      "name": "Radiohead",
+      "entity_id": "fixture-artist-radiohead",
+      "type": "urn:entity:artist"
+    }
+  ],
+  "insights_type": "urn:entity:brand",
+  "entities": [
+    {
+      "name": "Teenage Engineering",
+      "entity_id": "fixture-brand-te",
+      "type": "urn:entity:brand",
+      "affinity_note": "fixture affinity — replace with live /v2/insights"
+    },
+    {
+      "name": "Patagonia",
+      "entity_id": "fixture-brand-patagonia",
+      "type": "urn:entity:brand",
+      "affinity_note": "fixture affinity — replace with live /v2/insights"
+    }
+  ],
+  "decision": "apply",
+  "reason": "Fixture mode returned cultural candidates. Live mode uses Qloo entity receipts only."
+}

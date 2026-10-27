@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PolyStack Taste Gate</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a222c;
+      --ink: #e8eef4;
+      --muted: #8b9aab;
+      --accent: #3dcc9c;
+      --refuse: #e07070;
+      --apply: #3dcc9c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1c2a38, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.35rem;
+    }
+    .tagline { color: var(--muted); margin: 0 0 1.75rem; line-height: 1.45; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.35rem; }
+    input, select, button {
+      font: inherit;
+      width: 100%;
+      padding: 0.75rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid #2c3948;
+      background: var(--panel);
+      color: var(--ink);
+    }
+    button {
+      margin-top: 0.85rem;
+      background: var(--accent);
+      color: #062218;
+      border: none;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    .row { margin-bottom: 0.9rem; }
+    #out {
+      margin-top: 1.5rem;
+      padding: 1rem 1.1rem;
+      border-radius: 12px;
+      background: var(--panel);
+      border: 1px solid #2c3948;
+      display: none;
+    }
+    #out.show { display: block; }
+    .decision {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .decision.apply { background: rgba(61,204,156,0.2); color: var(--apply); }
+    .decision.refuse { background: rgba(224,112,112,0.2); color: var(--refuse); }
+    ul { padding-left: 1.1rem; }
+    li { margin: 0.35rem 0; }
+    code { font-size: 0.85em; color: #b7c9db; }
+    .mode { font-size: 0.8rem; color: var(--muted); margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>PolyStack Taste Gate</h1>
+    <p class="tagline">
+      Cultural recommendations only with Qloo entity receipts.
+      Weak signal → <strong>refuse</strong>. No hallucinated taste.
+    </p>
+    <form id="f">
+      <div class="row">
+        <label for="seed">Cultural seed (artist, brand, movie…)</label>
+        <input id="seed" name="seed" required placeholder="e.g. Radiohead" value="Radiohead" />
+      </div>
+      <div class="row">
+        <label for="target">Recommend as</label>
+        <select id="target" name="target">
+          <option value="urn:entity:brand">Brands</option>
+          <option value="urn:entity:movie">Movies</option>
+          <option value="urn:entity:artist">Artists</option>
+          <option value="urn:entity:place">Places</option>
+          <option value="urn:entity:podcast">Podcasts</option>
+          <option value="urn:entity:book">Books</option>
+        </select>
+      </div>
+      <button id="go" type="submit">Run Taste Gate</button>
+    </form>
+    <div id="out" aria-live="polite"></div>
+  </main>
+  <script>
+    const out = document.getElementById("out");
+    const go = document.getElementById("go");
+    document.getElementById("f").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      go.disabled = true;
+      out.classList.add("show");
+      out.innerHTML = "Running Locate → Diagnose…";
+      try {
+        const res = await fetch("/api/taste-gate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            seed: document.getElementById("seed").value,
+            target_type: document.getElementById("target").value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+        const dec = data.decision || "?";
+        const ents = (data.entities || [])
+          .map((x) => `<li><strong>${x.name}</strong> <code>${x.entity_id}</code></li>`)
+          .join("");
+        const located = (data.located || [])
+          .map((x) => `<li>${x.name} <code>${x.entity_id}</code></li>`)
+          .join("");
+        out.innerHTML = `
+          <p><span class="decision ${dec}">${dec}</span> ${data.reason || ""}</p>
+          <p><strong>Located</strong></p>
+          <ul>${located || "<li>(none)</li>"}</ul>
+          <p><strong>Insights</strong></p>
+          <ul>${ents || "<li>(none)</li>"}</ul>
+          <p class="mode">mode: ${data.mode || "?"}</p>
+        `;
+      } catch (err) {
+        out.innerHTML = `<p class="decision refuse">error</p><p>${err.message}</p>`;
+      } finally {
+        go.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
