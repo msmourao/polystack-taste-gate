@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: polystack-taste-gate
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: "8787"
+      - key: QLOO_API_KEY
+        sync: false
